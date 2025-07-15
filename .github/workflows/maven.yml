@@ -1,4 +1,4 @@
-name: CICD Pipeline 
+name: CICD Pipeline
 
 on:
   push:
@@ -17,8 +17,11 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
+      # --- IMPORTANT: Add working-directory here ---
       run: mvn compile
-      
+      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
+      # Example: if pom.xml is in 'my-app' folder, use './my-app'
+
   security-check:
     runs-on: self-hosted
     needs: compile
@@ -34,11 +37,15 @@ jobs:
         sudo apt-get install -y trivy
 
     - name: Trivy FS Scan
+      # Assuming you want to scan the entire checked-out repository,
+      # or you might need to adjust the '.' if your code is in a sub-directory
       run: trivy fs --format table -o fs-report.json .
 
     - name: Gitleaks Installation
       run: sudo apt install gitleaks -y
     - name: Gitleaks Code Scan
+      # Assuming you want to scan the entire checked-out repository,
+      # or you might need to adjust the '.' if your code is in a sub-directory
       run: gitleaks detect source . -r gitleaks-report.json -f json
 
   test:
@@ -53,7 +60,9 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Unit Test Cases
+      # --- IMPORTANT: Add working-directory here ---
       run: mvn test
+      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
 
   build_project_and_sonar_scan:
     runs-on: self-hosted
@@ -67,33 +76,49 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build Project
+      # --- IMPORTANT: Add working-directory here ---
       run: mvn package
+      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
     - name: Upload JAR artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-jar
-        path: target/*.jar 
-        
+        # Path should be relative to the working-directory of the build step
+        # or relative to the root if 'working-directory' is not set for this step.
+        # Assuming 'target' is inside 'your-project-subdirectory'
+        path: ./your-project-subdirectory/target/*.jar # <--- ADJUST THIS PATH
+        # If 'working-directory' is set for this upload step, then path: target/*.jar is fine.
+        # It's safer to specify working-directory for upload-artifact if the target folder
+        # is relative to the project root.
+        # working-directory: ./your-project-subdirectory # Optional, but good for clarity
+
     - uses: actions/checkout@v4
       with:
         # Disabling shallow clones is recommended for improving the relevancy of reporting
         fetch-depth: 0
+      # --- IMPORTANT: Add working-directory here for SonarQube as well ---
+      # SonarQube needs to find the pom.xml to analyze the project
+      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v5.0.0 # Ex: v4.1.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
-        
+
     - name: SonarQube Quality Gate check
       id: sonarqube-quality-gate-check
       uses: sonarsource/sonarqube-quality-gate-action@master
       with:
         pollingTimeoutSec: 600
       env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      # --- IMPORTANT: Add working-directory here for Quality Gate check if needed ---
+      # It often uses the same context as the scan
+      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
 
-  buils_docker_image_and_push:
+
+  buils_docker_image_and_push: # Typo: 'buils' should be 'builds'
     runs-on: self-hosted
     needs: build_project_and_sonar_scan
     steps:
@@ -102,8 +127,9 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: app-jar
-        path: app  # this will download JAR to ./app folder
-        
+        path: app # this will download JAR to ./app folder
+        # The JAR will be downloaded to ./app from the root of the runner's workspace.
+
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -116,14 +142,16 @@ jobs:
     - name: Build and Push Docker image
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: . # This means the Dockerfile is at the root of the repository.
+                   # If your Dockerfile is in a subdirectory, change this (e.g., './my-app')
         push: true
         tags: adijaiswal/bankapp:latest
-        file: ./Dockerfile
+        file: ./Dockerfile # This means Dockerfile is at the root.
+                           # If your Dockerfile is in a subdirectory, change this (e.g., './my-app/Dockerfile')
 
   deploy_to_kubernetes:
     runs-on: self-hosted
-    needs: buils_docker_image_and_push
+    needs: buils_docker_image_and_push # Typo: 'buils' should be 'builds'
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -147,7 +175,7 @@ jobs:
         mkdir -p $HOME/.kube
         echo "${{ secrets.EKS_KUBECONFIG }}" > $HOME/.kube/config
     - name: Deploy to EKS
+      # Assuming ds.yml is at the root of your repository.
+      # If it's in a subdirectory, you'll need to adjust the path (e.g., 'kubectl apply -f ./kubernetes/ds.yml')
       run: |
         kubectl apply -f ds.yml
-
-      
