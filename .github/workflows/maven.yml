@@ -87,26 +87,26 @@ jobs:
       with:
         fetch-depth: 0
     - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@v5.0.0 # Moved 'uses' immediately after 'name'
-      # Corrected path based on your repository structure
+      # --- IMPORTANT: working-directory must be at the same level as 'uses' ---
       working-directory: ./Github-Actions-Project # <--- CORRECTED PATH
+      uses: SonarSource/sonarqube-scan-action@v5.0.0
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
     - name: SonarQube Quality Gate check
-      id: sonarqube-quality-gate-check # 'id' immediately after 'name'
-      uses: sonarsource/sonarqube-quality-gate-action@master # Moved 'uses' after 'id'
+      id: sonarqube-quality-gate-check
+      # --- IMPORTANT: working-directory must be at the same level as 'uses' ---
+      working-directory: ./Github-Actions-Project # <--- CORRECTED PATH
+      uses: sonarsource/sonarqube-quality-gate-action@master
       with:
         pollingTimeoutSec: 600
-      # Corrected path based on your repository structure
-      working-directory: ./Github-Actions-Project # <--- CORRECTED PATH
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
 
 
-  build_docker_image_and_push: # Corrected typo 'buils' to 'build'
+  build_docker_image_and_push:
     runs-on: self-hosted
     needs: build_project_and_sonar_scan
     steps:
@@ -137,10 +137,9 @@ jobs:
 
   deploy_to_kubernetes:
     runs-on: self-hosted
-    needs: build_docker_image_and_push # Corrected typo 'buils' to 'build'
+    needs: build_docker_image_and_push
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     - name: Install AWS CLI
       run: |
         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
