@@ -19,7 +19,7 @@ jobs:
     - name: Build with Maven
       # --- IMPORTANT: Add working-directory here ---
       run: mvn compile
-      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
+      working-directory: Github-Actions-Project/Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
       # Example: if pom.xml is in 'my-app' folder, use './my-app'
 
   security-check:
@@ -62,7 +62,7 @@ jobs:
     - name: Unit Test Cases
       # --- IMPORTANT: Add working-directory here ---
       run: mvn test
-      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
+      working-directory: Github-Actions-Project/Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
 
   build_project_and_sonar_scan:
     runs-on: self-hosted
@@ -78,7 +78,7 @@ jobs:
     - name: Build Project
       # --- IMPORTANT: Add working-directory here ---
       run: mvn package
-      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
+      working-directory: Github-Actions-Project/Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
     - name: Upload JAR artifact
       uses: actions/upload-artifact@v4
       with:
@@ -98,7 +98,7 @@ jobs:
         fetch-depth: 0
       # --- IMPORTANT: Add working-directory here for SonarQube as well ---
       # SonarQube needs to find the pom.xml to analyze the project
-      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
+      working-directory: Github-Actions-Project/Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v5.0.0 # Ex: v4.1.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
       env:
@@ -115,7 +115,7 @@ jobs:
         SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
       # --- IMPORTANT: Add working-directory here for Quality Gate check if needed ---
       # It often uses the same context as the scan
-      working-directory: ./Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
+      working-directory: Github-Actions-Project/Github-Actions-Project/pom.xml # <--- CORRECT THIS PATH
 
 
   buils_docker_image_and_push: # Typo: 'buils' should be 'builds'
